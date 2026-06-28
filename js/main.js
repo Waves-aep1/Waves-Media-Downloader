@@ -25,7 +25,6 @@
     tiktokMode: document.getElementById("tiktokMode"),
     transcodeField: document.getElementById("transcodeField"),
     transcodeForAe: document.getElementById("transcodeForAe"),
-    transcodeHelpText: document.getElementById("transcodeHelpText"),
     actionButtons: document.getElementById("actionButtons"),
     spotifyAuthButton: document.getElementById("spotifyAuthButton"),
     inspectButton: document.getElementById("inspectButton"),
@@ -862,7 +861,7 @@
       nodes.cookiesBrowser.value = result.settings.cookiesBrowser || "";
       nodes.downloadDir.value = result.settings.downloadDir || "";
       nodes.setupDownloadDir.value = result.settings.downloadDir || "";
-      nodes.filenameTemplate.value = result.settings.filenameTemplate || "%(title).80s-%(id)s.%(ext)s";
+      nodes.filenameTemplate.value = result.settings.filenameTemplate || "%(title).80B-%(id)s.%(ext)s";
       updateFilenameTemplateNote();
       nodes.organizeProject.checked = result.settings.organizeProject !== false;
       nodes.downloadThumbnail.checked = result.settings.downloadThumbnail !== false;
@@ -1066,9 +1065,9 @@
   }
 
   function previewFilenameTemplate(value) {
-    var template = String(value || "%(title).80s-%(id)s.%(ext)s");
+    var template = String(value || "%(title).80B-%(id)s.%(ext)s");
     return template
-      .replace(/%\(title\)(?:\.[0-9]+[Bs])?s/g, "Example Title")
+      .replace(/%\(title\)(?:\.[0-9]+B)?s/g, "Example Title")
       .replace(/%\(id\)s/g, "abc123")
       .replace(/%\(epoch\)s/g, "1760000000")
       .replace(/%\(ext\)s/g, "mp4")
@@ -1266,8 +1265,7 @@
           html += '<div class="history-thumb history-thumb-empty">' + escapeHtml((item.source || "M").substring(0, 1).toUpperCase()) + '</div>';
         }
         html += '<div class="history-info">';
-        var displayTitle = item.originalTitle || cleanHistoryTitle(item.title || fileNameFromPath(item.file));
-        html += '<div class="history-title">' + escapeHtml(displayTitle) + '</div>';
+        html += '<div class="history-title">' + escapeHtml(cleanHistoryTitle(item.title || fileNameFromPath(item.file))) + '</div>';
         html += '<div class="history-meta"><span class="cache-badge ' + escapeHtml(cacheStatusClass(item)) + '">' + escapeHtml(cacheStatusLabel(item)) + '</span> ' + escapeHtml((item.source || "media") + " - " + formatHistoryDate(item.savedAt)) + '</div>';
         html += '</div></div><div class="history-actions">';
         if (item.exists !== false) {
@@ -1325,7 +1323,7 @@
   function metadataDisplayText(metadata) {
     metadata = metadata || {};
     var fields = [
-      ["Title", "title"], ["Original title", "originalTitle"], ["Original artist", "originalArtist"], ["Source", "source"], ["Source URL", "sourceUrl"], ["Downloaded", "downloadDate"],
+      ["Title", "title"], ["Source", "source"], ["Source URL", "sourceUrl"], ["Downloaded", "downloadDate"],
       ["Final file", "finalFile"], ["Original file", "originalFile"], ["Transcoded", "transcoded"],
       ["Quality", "quality"], ["Requested preset", "requestedConversionPreset"], ["Actual preset", "actualConversionPreset"],
       ["Video encoding", "actualHardwareAcceleration"],
@@ -2285,13 +2283,7 @@
     nodes.formatOptionsGroup.className = isSpotify ? "option-group" : "option-group hidden";
     nodes.tiktokModeField.className = "field hidden";
     nodes.batchField.className = "field hidden";
-    nodes.transcodeField.className = isSpotify ? "field inline hidden" : "field inline";
-    if (nodes.transcodeHelpText) {
-      nodes.transcodeHelpText.className = isSpotify ? "settings-note hidden" : "settings-note";
-    }
-    if (isSpotify && nodes.transcodeForAe) {
-      nodes.transcodeForAe.checked = false;
-    }
+    nodes.transcodeField.className = "field inline";
     nodes.autoFitField.className = isSpotify ? "field inline hidden" : "field inline";
     nodes.spotifyAuthButton.className = isFullSpotify ? "secondary" : "secondary hidden";
     nodes.inspectButton.className = isTikTok ? "secondary" : "secondary hidden";
