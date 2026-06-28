@@ -105,6 +105,19 @@
     return value ? value.substring(0, 32) : "media";
   }
 
+  function safeFilename(title, id, extension) {
+    var name = String(title || "media");
+    name = name.replace(/[\x00-\x1F<>:"\/\\|?*]/g, ' ');
+    name = name.replace(/\s+/g, ' ');
+    name = name.replace(/^[\s.\-]+|[\s.\-]+$/g, '');
+    var maxLen = 200 - (id ? id.length : 0) - (extension ? extension.length : 0) - 2;
+    if (name.length > maxLen && maxLen > 0) {
+      name = name.substring(0, maxLen).replace(/[\s.\-]+$/, '');
+    }
+    if (!name) { name = 'media'; }
+    return name + '-' + (id || '') + (extension || '');
+  }
+
   function writeSessionLog(label, text, settings) {
     try {
       var folder = settingsFolder();
@@ -333,7 +346,7 @@
       downloadDir: defaultDownloadDir(),
       defaultDownloadDir: defaultDownloadDir(),
       setupCompleted: false,
-      filenameTemplate: "%(title).80B-%(id)s.%(ext)s",
+      filenameTemplate: "%(title).80s-%(id)s.%(ext)s",
       organizeProject: true,
       downloadThumbnail: true,
       lastSpotifyMode: "easy",
@@ -718,6 +731,8 @@
       sourceUrl: payload.url || "",
       downloadDate: timestampForLog(new Date()),
       title: displayTitle || displayNameForFile(file),
+      originalTitle: payload.originalTitle || displayTitle || "",
+      originalArtist: payload.originalArtist || "",
       finalFile: file && file.fsName ? file.fsName : "",
       originalFile: sourceFile && sourceFile.fsName ? sourceFile.fsName : "",
       importedFiles: filePathList(files || []),
@@ -791,6 +806,8 @@
       source: payload.source || "",
       url: payload.url || "",
       title: displayNameForFile(file),
+      originalTitle: payload.originalTitle || "",
+      originalArtist: payload.originalArtist || "",
       quality: payload.quality || "",
       spotifyMode: payload.spotifyMode || "",
       tiktokMode: payload.tiktokMode || "",
@@ -831,6 +848,8 @@
         cacheStatus: cacheStatus,
         thumbnail: thumbnail && thumbnail.exists ? thumbnail.fsName : "",
         title: cleanDisplayName(entry.title || displayNameForFile(file) || entry.file),
+        originalTitle: entry.originalTitle || "",
+        originalArtist: entry.originalArtist || "",
         source: entry.source || "",
         url: entry.url || "",
         quality: entry.quality || "",
@@ -1152,7 +1171,7 @@
     var baseVideoFormat = "bv*[height<=2160]";
     var fallbackFormat = "b[height<=2160]/best[height<=2160]";
     var format = baseVideoFormat + "+ba/" + fallbackFormat;
-    var args = ["--no-playlist", "--restrict-filenames", "--windows-filenames", "--newline", "--force-overwrites"];
+    var args = ["--no-playlist", "--windows-filenames", "--newline", "--force-overwrites"];
     if (payload.quality === "best1080") {
       baseVideoFormat = "bv*[height<=1080]";
       fallbackFormat = "b[height<=1080]/best[height<=1080]";
@@ -1204,7 +1223,7 @@
     if (payload.downloadThumbnail) {
       args = args.concat(["--write-thumbnail", "--convert-thumbnails", "jpg"]);
     }
-    args = args.concat(["--print", "after_move:filepath", "-o", settings.filenameTemplate || "%(title).80B-%(id)s.%(ext)s", "-P", folder.fsName, payload.url]);
+    args = args.concat(["--print", "after_move:filepath", "-o", settings.filenameTemplate || "%(title).80s-%(id)s.%(ext)s", "-P", folder.fsName, payload.url]);
     return args;
   }
 
@@ -1245,7 +1264,7 @@
   }
 
   function tiktokArgsFor(payload, settings, folder) {
-    var args = ["--no-playlist", "--restrict-filenames", "--windows-filenames", "--newline", "--force-overwrites"];
+    var args = ["--no-playlist", "--windows-filenames", "--newline", "--force-overwrites"];
     if (payload.tiktokMode === "mp3") {
       args = args.concat(["-f", "bestaudio/best", "--extract-audio", "--audio-format", "mp3"]);
     } else {
@@ -1269,7 +1288,7 @@
     if (payload.downloadThumbnail) {
       args = args.concat(["--write-thumbnail", "--convert-thumbnails", "jpg"]);
     }
-    args = args.concat(["--print", "after_move:filepath", "-o", settings.filenameTemplate || "%(title).80B-%(id)s-%(epoch)s.%(ext)s", "-P", folder.fsName, payload.url]);
+    args = args.concat(["--print", "after_move:filepath", "-o", settings.filenameTemplate || "%(title).80s-%(id)s-%(epoch)s.%(ext)s", "-P", folder.fsName, payload.url]);
     return args;
   }
 
@@ -1301,8 +1320,9 @@
     script.write("if (-not $mediaUrl) { throw 'TikWM did not expose a downloadable media URL.' }\r\n");
     script.write("$id = if ($data.id) { [string]$data.id } else { [string][DateTimeOffset]::Now.ToUnixTimeSeconds() }\r\n");
     script.write("$title = if ($data.title) { [string]$data.title } else { 'tiktok' }\r\n");
-    script.write("$safeTitle = ($title -replace '[<>:\"/\\\\|?*\\x00-\\x1F]', '_').Trim()\r\n");
-    script.write("if ($safeTitle.Length -gt 80) { $safeTitle = $safeTitle.Substring(0, 80) }\r\n");
+    script.write("$safeTitle = ($title -replace '[\\x00-\\x1F<>:\"/\\\\|?*]', ' ') -replace '\\s+', ' '\r\n");
+    script.write("$safeTitle = $safeTitle.Trim(' ', '.', '-')\r\n");
+    script.write("if ($safeTitle.Length -gt 80) { $safeTitle = $safeTitle.Substring(0, 80).TrimEnd(' ', '.', '-') }\r\n");
     script.write("if (-not $safeTitle) { $safeTitle = 'tiktok' }\r\n");
     script.write("$out = Join-Path $OutDir ($safeTitle + '-' + $id + $ext)\r\n");
     script.write("Invoke-WebRequest -Uri $mediaUrl -Headers $headers -OutFile $out -UseBasicParsing\r\n");
@@ -1961,7 +1981,7 @@
   }
 
   function spotifySearchArgsFor(query, settings, folder) {
-    var args = ["--restrict-filenames", "--windows-filenames", "--newline", "--force-overwrites", "-f", "bestaudio/best", "--extract-audio", "--audio-format", "wav"];
+    var args = ["--windows-filenames", "--newline", "--force-overwrites", "-f", "bestaudio/best", "--extract-audio", "--audio-format", "wav"];
     if (settings.ffmpegPath) {
       args = args.concat(["--ffmpeg-location", settings.ffmpegPath]);
     }
@@ -3461,8 +3481,12 @@
           if (files.length < 1 && outputMentionsExistingFile(output)) {
             throw new Error("spotify-dlp says the track is already downloaded, but Waves could not match that exact audio file in the Spotify Imports folder.\n\nDelete or rename the existing Spotify file and try again, or clear the old download from Download History.\n\nCommand output:\n" + output);
           }
+          var resolvedQuery = spotifyDlpResolvedQuery(output);
+          if (resolvedQuery && !payload.originalTitle) {
+            payload.originalTitle = resolvedQuery;
+          }
           if (files.length < 1) {
-            var fallbackQuery = spotifyDlpResolvedQuery(output);
+            var fallbackQuery = resolvedQuery;
             if (fallbackQuery) {
               var fallbackSnapshot = fileSnapshot(folder, audioExtensions);
               var fallbackOutput = runYtdlpWithArgs(spotifySearchArgsFor(fallbackQuery, settings, folder), settings, folder, "yt-dlp-spotify-fallback", payload.jobId || "");
@@ -3482,6 +3506,7 @@
         } else {
           var easy = spotifyEasyCommandFor(payload, settings, folder);
           displayTitle = displayTitle || easy.query;
+          payload.originalTitle = easy.query;
           output = "Resolved search: " + easy.query + "\n\n" + runYtdlpWithArgs(easy.args, settings, folder, "yt-dlp-spotify-easy", payload.jobId || "");
           file = findDownloadedFile(output);
           if (!file) {
