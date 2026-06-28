@@ -4,6 +4,10 @@ User-visible changes to Waves Media Downloader are recorded here.
 
 ## Unreleased
 
+## 1.4.7.5 - 2026-06-28
+
+- Fixed Spotify media conversion errors
+
 ## 1.4.7 - 2026-06-28
 
 - Clarified installation, privacy, licensing, and release documentation.
