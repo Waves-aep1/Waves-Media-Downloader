@@ -1,0 +1,42 @@
+HOW TO INSTALL WAVES MEDIA DOWNLOADER
+
+1. Open the extracted Waves Media Downloader folder.
+
+2. Run:
+
+   install-windows.bat
+
+3. Review the installer summary.
+
+   Confirm "Build version: 1.4.7" and the expected "Installer source".
+   The installer may install yt-dlp, spotify-dlp, FFmpeg, Python, or winget.
+
+4. Restart After Effects.
+
+5. Open:
+
+   Window > Extensions > Waves Media Downloader
+
+6. Choose a download folder on first launch.
+
+
+
+
+TROUBLESHOOTING
+
+- If Windows blocks the installer, right-click install-windows.bat and choose
+  "Run as administrator".
+- If FFmpeg is not detected, install it from https://ffmpeg.org/download.html
+  or set its path in Waves Media Downloader Settings.
+- Browser cookies are optional and may let yt-dlp use your logged-in browser
+  session on supported sites.
+
+
+UNINSTALL
+
+Run:
+
+uninstall-windows.bat
+
+The uninstaller can optionally remove settings, downloads, installed tools,
+and the local FFmpeg copy.

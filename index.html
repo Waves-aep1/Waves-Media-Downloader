@@ -1,0 +1,447 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: https:; connect-src https:; object-src 'none'; frame-src 'none'; base-uri 'self';" />
+    <title>Waves Media Downloader</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+    <script src="./js/CSInterface.js"></script>
+  </head>
+  <body>
+    <main class="panel">
+      <header>
+        <h1>Waves Media Downloader</h1>
+        <button id="settingsButton" class="settings-button" title="Settings" type="button">Settings</button>
+      </header>
+
+      <nav class="tabs" aria-label="Panel sections">
+        <button id="downloaderTab" class="tab active" type="button">Downloader</button>
+        <button id="historyTab" class="tab" type="button">Download History</button>
+      </nav>
+
+      <section id="downloaderPanel" class="tab-panel">
+        <section id="sourcePicker" class="source-picker">
+          <button class="source-card" type="button" data-source="youtube">
+            <strong>YouTube</strong>
+            <span>Video up to 4K, audio, thumbnails, cookies when needed</span>
+          </button>
+          <button class="source-card" type="button" data-source="spotify">
+            <strong>Spotify / Song Audio</strong>
+            <span>Spotify URLs, song searches, WAV audio import</span>
+          </button>
+          <button class="source-card" type="button" data-source="tiktok">
+            <strong>TikTok</strong>
+            <span>Video or MP3 audio with analytics checker</span>
+          </button>
+          <button class="source-card" type="button" data-source="other">
+            <strong>Other Sites</strong>
+            <span>Any supported yt-dlp media URL</span>
+          </button>
+        </section>
+
+        <section id="downloadForm" class="download-form hidden">
+          <div class="form-topbar">
+            <button id="backToSources" class="back-button" type="button">Back</button>
+            <div>
+              <div id="sourceTitle" class="source-title">YouTube</div>
+              <div id="sourceHint" class="source-hint">Download and import media.</div>
+            </div>
+          </div>
+
+          <section class="field hidden">
+            <label for="source">Source</label>
+            <select id="source">
+              <option value="youtube">YouTube video</option>
+              <option value="spotify">Spotify / song audio</option>
+              <option value="tiktok">TikTok video / audio</option>
+              <option value="other">Other sites</option>
+            </select>
+          </section>
+
+          <section class="field">
+            <label id="urlLabel" for="url">YouTube URL</label>
+            <input id="url" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+          </section>
+
+          <section id="batchField" class="field">
+            <label id="batchLabel" for="batchUrls">Batch input</label>
+            <textarea id="batchUrls" rows="4" placeholder="Optional: paste multiple URLs or searches here, one per line."></textarea>
+          </section>
+
+          <section id="formatOptionsGroup" class="option-group hidden">
+            <div class="option-title">Format</div>
+            <section id="spotifyModeField" class="field hidden">
+              <label for="spotifyMode">Spotify Mode</label>
+              <select id="spotifyMode">
+                <option value="easy">Easy audio search, no Spotify login</option>
+                <option value="full">Full Spotify metadata, requires auth</option>
+              </select>
+            </section>
+
+            <section id="tiktokModeField" class="field hidden">
+              <label for="tiktokMode">TikTok Output</label>
+              <select id="tiktokMode">
+                <option value="original">Video</option>
+                <option value="mp3">MP3 audio</option>
+              </select>
+            </section>
+          </section>
+
+          <section id="actionButtons" class="button-grid">
+            <button id="spotifyAuthButton" class="secondary hidden" type="button">Authenticate Spotify</button>
+            <button id="inspectButton" class="secondary hidden" type="button">Check TikTok Stats</button>
+          </section>
+
+          <section class="option-group">
+            <div class="option-title">Import Options</div>
+            <section id="transcodeField" class="field inline">
+              <input id="transcodeForAe" type="checkbox" checked />
+              <label for="transcodeForAe">Convert incompatible files for After Effects</label>
+            </section>
+            <p class="settings-note">Auto skips safe media. A specific ProRes preset always creates ProRes; compatible H.264 and WAV may be reused.</p>
+
+            <section class="field inline">
+              <input id="addToTimeline" type="checkbox" checked />
+              <label for="addToTimeline">Add to active composition timeline</label>
+            </section>
+
+            <section id="autoFitField" class="field inline">
+              <input id="autoFitToComp" type="checkbox" checked />
+              <label for="autoFitToComp">Auto-fit layer to composition</label>
+            </section>
+
+            <section class="field inline">
+              <input id="createCompIfNeeded" type="checkbox" checked />
+              <label for="createCompIfNeeded">Create new comp only when none is active</label>
+            </section>
+
+            <section class="field inline">
+              <input id="precomposeLayer" type="checkbox" />
+              <label for="precomposeLayer">Pre-compose imported media</label>
+            </section>
+          </section>
+
+          <section class="button-grid">
+            <button id="downloadButton" class="primary" type="button">Download and Import</button>
+            <button id="addToQueueButton" class="secondary" type="button">Add to Queue</button>
+          </section>
+
+          <section id="queuePanel" class="queue-panel hidden">
+            <div class="queue-header">
+              <strong>Queue</strong>
+              <div class="queue-actions">
+                <button id="startQueueButton" class="mini-button primary-mini" type="button">Start Queue</button>
+                <button id="removeCompletedQueueButton" class="mini-button" type="button">Remove Done</button>
+                <button id="clearFailedQueueButton" class="mini-button" type="button">Clear Failed</button>
+                <button id="clearQueueButton" class="mini-button" type="button">Clear</button>
+              </div>
+            </div>
+            <div id="queueList" class="queue-list"></div>
+          </section>
+        </section>
+
+        <section class="status" aria-live="polite">
+          <div id="statusTitle">Ready</div>
+          <div id="statusDetail" class="status-detail">Requires yt-dlp and FFmpeg available on PATH, or configured in Settings.</div>
+        </section>
+      </section>
+
+      <section id="historyPanel" class="tab-panel hidden">
+        <section class="history">
+          <div class="history-header">
+            <h2>Download History</h2>
+            <div class="history-header-actions">
+              <button id="refreshHistory" class="mini-button" type="button">Refresh</button>
+              <button id="deleteAllHistory" class="mini-button danger" type="button">Delete All</button>
+            </div>
+          </div>
+          <div id="historyList" class="history-list">No downloads yet.</div>
+        </section>
+      </section>
+
+      <div id="settingsDialog" class="modal" hidden>
+        <form>
+          <h2>Settings</h2>
+          <section class="option-group">
+            <div class="option-title">Downloads</div>
+            <label for="downloadDir">Download folder</label>
+            <div class="path-row">
+              <input id="downloadDir" placeholder="Documents\\Waves Media Downloads" />
+              <button id="browseDownloadDir" type="button">Browse</button>
+            </div>
+            <button id="openDownloadDir" class="secondary compact" type="button">Open Downloads Folder</button>
+            <label for="conversionMode">FFmpeg conversion presets</label>
+            <div class="field-hint">Choose Auto for compatibility checks, or select the exact output format you want.</div>
+            <select id="conversionMode"></select>
+            <div id="conversionPresetDescription" class="settings-note"></div>
+            <div class="preset-actions">
+              <button id="createPresetBtn" class="secondary compact" type="button">Create</button>
+              <button id="duplicatePresetBtn" class="secondary compact" type="button">Duplicate</button>
+              <button id="editPresetBtn" class="secondary compact" type="button">Edit</button>
+              <button id="deletePresetBtn" class="secondary compact danger" type="button">Delete</button>
+            </div>
+            <section class="field inline">
+              <input id="disableHardwareAcceleration" type="checkbox" />
+              <label for="disableHardwareAcceleration">Disable hardware acceleration</label>
+            </section>
+            <section class="field inline">
+              <input id="organizeProject" type="checkbox" checked />
+              <label for="organizeProject">Organize imported media in AE folders</label>
+            </section>
+            <section class="field inline">
+              <input id="downloadThumbnail" type="checkbox" checked />
+              <label for="downloadThumbnail">Import thumbnails when available</label>
+            </section>
+          </section>
+
+          <section class="option-group">
+            <div class="option-title">Tools</div>
+            <label for="ytdlpPath">yt-dlp path</label>
+            <input id="ytdlpPath" placeholder="yt-dlp or C:\\Tools\\yt-dlp.exe" />
+            <label for="spotifyDlpPath">spotify-dlp path</label>
+            <input id="spotifyDlpPath" placeholder="spotify-dlp or C:\\Python\\Scripts\\spotify-dlp.exe" />
+            <label for="ffmpegPath">FFmpeg override</label>
+            <input id="ffmpegPath" placeholder="Leave blank unless FFmpeg is not on PATH" />
+            <button id="updateDependencies" class="secondary" type="button">Update yt-dlp, spotify-dlp, and FFmpeg</button>
+          </section>
+
+          <section class="option-group">
+            <div class="option-title">Authentication</div>
+            <label for="cookiesBrowser">YouTube cookies browser</label>
+            <select id="cookiesBrowser">
+              <option value="">None</option>
+              <option value="chrome">Chrome</option>
+              <option value="edge">Edge</option>
+              <option value="firefox">Firefox</option>
+              <option value="brave">Brave</option>
+              <option value="opera">Opera</option>
+              <option value="opera_gx">Opera GX</option>
+              <option value="opera_beta">Opera Beta</option>
+              <option value="opera_developer">Opera Developer</option>
+            </select>
+            <div class="settings-note">Browser cookies are optional. If enabled, yt-dlp may access supported sites as your logged-in browser session.</div>
+            <label for="spotifyClientId">Spotify client ID</label>
+            <input id="spotifyClientId" placeholder="Optional. Not needed after Spotify auth is completed." />
+            <label for="spotifyClientSecret">Spotify client secret</label>
+            <input id="spotifyClientSecret" type="password" placeholder="Optional. Not shown for spotify-dlp auth tokens." />
+            <section class="field inline">
+              <input id="showSpotifyClientSecret" type="checkbox" />
+              <label for="showSpotifyClientSecret">Show saved Spotify client secret</label>
+            </section>
+            <div id="spotifyAuthState" class="settings-note">Spotify auth not checked yet.</div>
+          </section>
+
+          <section class="option-group">
+            <div class="option-title">Advanced</div>
+            <label for="filenameTemplate">Filename template</label>
+            <input id="filenameTemplate" placeholder="%(title).80B-%(id)s.%(ext)s" />
+            <div id="filenameTemplateNote" class="settings-note">Keep templates as filenames only. Folders and path traversal are blocked.</div>
+          </section>
+
+          <section class="option-group">
+            <div class="option-title">Privacy</div>
+            <div class="settings-note">Waves does not upload files to a Waves-owned server. Actions may contact yt-dlp-supported sites, YouTube, TikTok/TikWM, Spotify/Song.link, GitHub, python.org, winget/aka.ms, and gyan.dev.</div>
+            <div class="settings-note">Using browser cookies may allow yt-dlp to access supported sites as your logged-in browser session. Only enable this if you understand the privacy implications.</div>
+          </section>
+
+          <section class="option-group">
+            <div class="option-title">Diagnostics</div>
+            <section class="about-box">
+              <h3>About / Diagnostics</h3>
+              <p id="aboutText">Waves Media Downloader</p>
+              <div class="button-grid">
+                <button id="copySafeDiagnostics" class="secondary compact" type="button">Copy Safe Diagnostics</button>
+                <button id="copyFullDiagnostics" class="secondary compact" type="button">Copy Full Diagnostics</button>
+              </div>
+            </section>
+          </section>
+          <menu>
+            <button id="cancelSettings" value="cancel" type="button">Cancel</button>
+            <button id="saveSettings" value="default" type="button">Save</button>
+          </menu>
+        </form>
+      </div>
+
+      <div id="setupDialog" class="modal" hidden>
+        <form>
+          <h2>Choose Download Folder</h2>
+          <p>Pick where Waves Media Downloader should save imported media. You can change this later in Settings.</p>
+          <p class="settings-note">Downloads contact third-party sites and tools such as yt-dlp-supported websites, TikTok/TikWM, Spotify/Song.link, GitHub, Python, winget, and FFmpeg sources only when you start those actions. Browser cookies are optional and can let yt-dlp use your logged-in browser session.</p>
+          <label for="setupDownloadDir">Download folder</label>
+          <div class="path-row">
+            <input id="setupDownloadDir" placeholder="Documents\\Waves Media Downloads" />
+            <button id="browseSetupDownloadDir" type="button">Browse</button>
+          </div>
+          <menu>
+            <button id="useDefaultDownloadDir" type="button">Use Default</button>
+            <button id="saveSetup" type="button">Save</button>
+          </menu>
+        </form>
+      </div>
+
+      <div id="errorDialog" class="modal" hidden>
+        <form>
+          <h2 id="errorDialogTitle">Error</h2>
+          <p id="errorDialogMessage">Something went wrong.</p>
+          <menu class="single">
+            <button id="closeErrorDialog" type="button">OK</button>
+          </menu>
+        </form>
+      </div>
+
+      <div id="workingDialog" class="modal working-modal" hidden>
+        <form>
+          <div class="working-indicator" aria-hidden="true"></div>
+          <h2 id="workingDialogTitle">Downloading File</h2>
+          <p id="workingDialogMessage">The file is being downloaded.</p>
+          <p class="settings-note">After Effects may temporarily appear frozen while the download or conversion runs. Do not force close After Effects.</p>
+        </form>
+      </div>
+
+      <div id="inspectDialog" class="modal" hidden>
+        <form>
+          <h2>TikTok Video Stats</h2>
+          <p id="inspectHint">Video overview, engagement, and media details.</p>
+          <div id="inspectActions" class="button-grid">
+            <button id="previewInfoButton" class="secondary" type="button">Preview Info</button>
+            <button id="formatInfoButton" class="secondary" type="button">Check Formats</button>
+            <button id="tiktokInfoButton" class="secondary hidden" type="button">Check Video Stats</button>
+          </div>
+          <section class="status compact-status">
+            <div id="inspectResultTitle">Ready</div>
+            <div id="inspectResultDetail" class="status-detail">Paste a URL, then choose an inspector.</div>
+          </section>
+          <menu class="single">
+            <button id="closeInspectDialog" type="button">Close</button>
+          </menu>
+        </form>
+      </div>
+
+      <div id="presetEditorModal" class="modal" hidden>
+        <form id="presetEditorForm">
+          <div class="modal-header">
+            <h2 id="presetEditorTitle">Create Preset</h2>
+            <button id="closePresetEditorBtn" class="icon-button" type="button" title="Close preset editor">X</button>
+          </div>
+          <section class="preset-editor-grid">
+            <label for="presetNameInput">Preset name</label>
+            <input id="presetNameInput" maxlength="60" />
+            <label for="presetDescriptionInput">Description</label>
+            <input id="presetDescriptionInput" maxlength="120" />
+            <label for="presetOutputType">Output type</label>
+            <select id="presetOutputType"><option value="video">Video</option><option value="audio">Audio only</option></select>
+            <label for="presetContainer">Container</label>
+            <select id="presetContainer"><option value="mp4">MP4</option><option value="mov">MOV</option><option value="wav">WAV</option><option value="mp3">MP3</option><option value="m4a">M4A</option></select>
+            <div id="videoPresetFields" class="preset-fields">
+              <label for="presetVideoCodec">Video codec</label>
+              <select id="presetVideoCodec"><option value="libx264">H.264</option><option value="libx265">H.265</option><option value="prores_422_hq">ProRes 422 HQ</option><option value="prores_4444">ProRes 4444</option></select>
+              <label for="presetHardwareAcceleration">Video encoding</label>
+              <select id="presetHardwareAcceleration"><option value="cpu">CPU</option><option value="auto">Auto GPU, fall back to CPU</option><option value="nvenc">NVIDIA NVENC</option><option value="qsv">Intel Quick Sync</option><option value="amf">AMD AMF</option></select>
+              <div class="field-hint">Hardware encoding applies to custom H.264/H.265 presets. ProRes always uses CPU.</div>
+              <label for="presetCrf">CRF</label>
+              <input id="presetCrf" type="number" min="16" max="28" />
+              <label for="presetEncoderPreset">Encoder speed</label>
+              <select id="presetEncoderPreset"><option value="ultrafast">ultrafast</option><option value="superfast">superfast</option><option value="veryfast">veryfast</option><option value="faster">faster</option><option value="fast">fast</option><option value="medium">medium</option><option value="slow">slow</option></select>
+              <label for="presetPixelFormat">Pixel format</label>
+              <select id="presetPixelFormat"><option value="yuv420p">yuv420p</option><option value="yuv422p10le">yuv422p10le</option><option value="yuva444p10le">yuva444p10le</option></select>
+              <label for="presetFrameRateMode">Frame rate mode</label>
+              <select id="presetFrameRateMode"><option value="keep">Keep source</option><option value="cfr">Constant frame rate</option></select>
+              <label for="presetTargetFps">Target FPS</label>
+              <select id="presetTargetFps"><option value="source">Source FPS</option><option value="23.976">23.976</option><option value="24">24</option><option value="25">25</option><option value="29.97">29.97</option><option value="30">30</option><option value="50">50</option><option value="59.94">59.94</option><option value="60">60</option></select>
+              <section class="field inline"><input id="presetHdrToSdr" type="checkbox" /><label for="presetHdrToSdr">HDR to SDR tone map</label></section>
+              <section class="field inline"><input id="presetSkipIfAeFriendly" type="checkbox" /><label for="presetSkipIfAeFriendly">Skip if already AE-friendly</label></section>
+            </div>
+            <div id="audioPresetFields" class="preset-fields">
+              <label for="presetAudioCodec">Audio codec</label>
+              <select id="presetAudioCodec"><option value="aac">AAC</option><option value="pcm_s16le">PCM WAV</option><option value="libmp3lame">MP3</option><option value="copy">Copy source audio</option><option value="none">No audio</option></select>
+              <label for="presetAudioBitrate">Audio bitrate</label>
+              <select id="presetAudioBitrate"><option value="128k">128k</option><option value="192k">192k</option><option value="256k">256k</option><option value="320k">320k</option></select>
+              <label for="presetSampleRate">Sample rate</label>
+              <select id="presetSampleRate"><option value="keep">Keep source</option><option value="44100">44100</option><option value="48000">48000</option></select>
+              <label for="presetChannels">Channels</label>
+              <select id="presetChannels"><option value="keep">Keep source</option><option value="stereo">Stereo</option></select>
+            </div>
+            <label for="presetSuffix">Filename ending</label>
+            <input id="presetSuffix" maxlength="40" />
+            <div class="settings-note">Added after the original filename. Example: clip + -AE-H264-HQ becomes clip-AE-H264-HQ.mp4.</div>
+            <section class="field inline"><input id="presetFaststart" type="checkbox" /><label for="presetFaststart">Optimize MP4 for fast start</label></section>
+            <div id="presetValidationMessage" class="settings-note error"></div>
+          </section>
+          <menu>
+            <button id="cancelPresetEditorBtn" type="button">Cancel</button>
+            <button id="savePresetBtn" type="submit">Save Preset</button>
+          </menu>
+        </form>
+      </div>
+
+      <div id="metadataDialog" class="modal" hidden>
+        <form>
+          <h2 id="metadataDialogTitle">Download Metadata</h2>
+          <pre id="metadataDialogContent" class="metadata-viewer"></pre>
+          <menu class="single">
+            <button id="closeMetadataDialog" type="button">Close</button>
+          </menu>
+        </form>
+      </div>
+
+      <div id="configureDialog" class="modal" hidden>
+        <form>
+          <h2>Choose Download</h2>
+          <section id="configuredInfo" class="media-summary hidden">
+            <img id="configuredThumb" alt="" />
+            <div>
+              <strong id="configuredTitle">No media loaded</strong>
+              <span id="configuredMeta">Choose the file type and quality.</span>
+            </div>
+          </section>
+          <section class="field">
+            <label for="configureFileType">File type</label>
+            <select id="configureFileType">
+              <option value="video">Video with audio</option>
+              <option value="audio">Audio only WAV</option>
+            </select>
+          </section>
+          <section id="configureResolutionField" class="field">
+            <label for="configureResolution">Video resolution</label>
+            <select id="configureResolution">
+              <option value="best2160">Best quality up to 4K</option>
+              <option value="best1080">Best quality up to 1080p</option>
+              <option value="best720">Best quality up to 720p</option>
+              <option value="best">Best available</option>
+            </select>
+          </section>
+          <p id="configureStatus" class="settings-note">Paste a URL, then configure the download.</p>
+          <menu>
+            <button id="cancelConfigure" type="button">Cancel</button>
+            <button id="saveConfigure" type="button">Continue</button>
+          </menu>
+        </form>
+      </div>
+
+      <div id="cookieAlert" class="modal" hidden>
+        <form>
+          <h2>YouTube Cookies Needed</h2>
+          <p id="cookieAlertMessage">Open Settings and choose the browser where you are logged into YouTube.</p>
+          <menu>
+            <button id="cookieAlertClose" type="button">Close</button>
+            <button id="cookieAlertSettings" type="button">Settings</button>
+          </menu>
+        </form>
+      </div>
+
+      <div id="updateDialog" class="modal" hidden>
+        <form>
+          <h2>yt-dlp Update Available</h2>
+          <p id="updateMessage">A newer yt-dlp version is available.</p>
+          <menu>
+            <button id="declineUpdate" type="button">Cancel</button>
+            <button id="installUpdate" type="button">Update</button>
+          </menu>
+        </form>
+      </div>
+
+      <div class="credit"><a id="wavesCredit" href="https://www.tiktok.com/@waves.aep1" title="Open @waves.aep1 on TikTok">TikTok @waves.aep1</a></div>
+    </main>
+    <script src="./js/main.js"></script>
+  </body>
+</html>

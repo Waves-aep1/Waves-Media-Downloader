@@ -1,0 +1,21 @@
+# Private signing files
+*.p12
+*.pfx
+*.key
+.rnd
+ZXPSignCmd.exe
+
+# Release/build artifacts
+release/
+*.zxp
+*.zip
+
+# Dev/private folders
+.agents/
+.git/
+
+# Logs/temp
+*.log
+*.tmp
+.DS_Store
+desktop.ini
